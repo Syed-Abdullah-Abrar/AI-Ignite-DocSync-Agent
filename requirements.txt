@@ -1,0 +1,26 @@
+# AyuSync - Core Dependencies
+
+# Orchestration & AI
+langgraph
+langchain
+langchain-openai
+langchain-google-genai
+langfuse
+
+# Data & Validation
+pydantic>=2.0.0
+fhir.resources
+
+# API & Web
+fastapi
+uvicorn
+httpx
+python-dotenv
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# Utilities
+requests
+python-multipart
