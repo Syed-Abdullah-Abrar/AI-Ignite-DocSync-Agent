@@ -12,7 +12,7 @@ class WhatsAppMCP:
     """WhatsApp message handler via MCP."""
     
     def __init__(self):
-        self.api_key = config.whats_app.api_key
+        self.api_key = config.messaging.api_key
         self.base_url = "https://api.whatsapp.com/v1"
     
     async def send_message(self, phone: str, message: str) -> dict:

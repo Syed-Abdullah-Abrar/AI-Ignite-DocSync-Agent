@@ -15,9 +15,9 @@ import os
 @dataclass
 class AIConfig:
     """AI model configuration."""
-    minimax_api_key: str = os.getenv("MINIMAX_API_KEY", "")
-    minimax_api_base: str = os.getenv("OPENAI_API_BASE", "https://api.minimax.io/v1")
-    model_name: str = "MiniMax-m2.7"
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
+    openai_api_base: str = os.getenv("OPENAI_API_BASE", "https://api.minimax.io/v1")
+    model_name: str = os.getenv("OPENAI_MODEL", "MiniMax-Text-01")
 
 
 @dataclass
@@ -56,8 +56,7 @@ class AppConfig:
     uhi: UHIConfig = field(default_factory=UHIConfig)
     db: DatabaseConfig = field(default_factory=DatabaseConfig)
     langfuse: LangfuseConfig = field(default_factory=LangfuseConfig)
-    # FIX: Renamed from `whats_app` to `whatsapp` for consistency
-    whatsapp: WhatsAppConfig = field(default_factory=WhatsAppConfig)
+    messaging: WhatsAppConfig = field(default_factory=WhatsAppConfig)
 
 
 def get_config() -> AppConfig:

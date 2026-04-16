@@ -12,6 +12,9 @@ from langgraph.graph import StateGraph, END
 class PatientState(BaseModel):
     """State carried through the LangGraph pipeline."""
     
+    # Allow mutation so nodes can update fields in-place
+    model_config = {"arbitrary_types_allowed": True}
+    
     # Patient identification
     patient_id: Optional[str] = None
     phone_number: Optional[str] = None
@@ -56,20 +59,33 @@ class PatientState(BaseModel):
 
 
 def create_graph():
-    """Create and compile the DocSync StateGraph."""
+    """Create and compile the DocSync StateGraph.
+    
+    Imports node functions here (not at module level) to avoid
+    circular imports between graph ↔ agents.
+    """
+    # Import actual node functions — LangGraph requires callables, not strings
+    from src.agents.steward import steward_node
+    from src.agents.symptom import symptom_node
+    from src.agents.history import history_node
+    from src.agents.reasoning import reasoning_node, ask_patient_node
+    from src.agents.fhir import fhir_node
+    from src.agents.uhi import uhi_discovery_node, uhi_confirm_node, notify_patient_node
+    from src.agents.emergency import emergency_node
+    
     builder = StateGraph(PatientState)
     
-    # Add nodes
-    builder.add_node("steward", "steward_node")
-    builder.add_node("symptom", "symptom_node")
-    builder.add_node("history", "history_node")
-    builder.add_node("reasoning", "reasoning_node")
-    builder.add_node("ask_patient", "ask_patient_node")
-    builder.add_node("fhir", "fhir_node")
-    builder.add_node("uhi_discovery", "uhi_discovery_node")
-    builder.add_node("uhi_confirm", "uhi_confirm_node")
-    builder.add_node("emergency", "emergency_node")
-    builder.add_node("notify_patient", "notify_patient_node")
+    # Add nodes — pass actual callable functions
+    builder.add_node("steward", steward_node)
+    builder.add_node("symptom", symptom_node)
+    builder.add_node("history", history_node)
+    builder.add_node("reasoning", reasoning_node)
+    builder.add_node("ask_patient", ask_patient_node)
+    builder.add_node("fhir", fhir_node)
+    builder.add_node("uhi_discovery", uhi_discovery_node)
+    builder.add_node("uhi_confirm", uhi_confirm_node)
+    builder.add_node("emergency", emergency_node)
+    builder.add_node("notify_patient", notify_patient_node)
     
     # Define routing logic
     def route_after_steward(state: PatientState) -> str:
@@ -93,19 +109,17 @@ def create_graph():
     # Set entry point and edges
     builder.set_entry_point("steward")
     
-    # Sequential edges
+    # Sequential edges (only for nodes with ONE fixed successor)
     builder.add_edge("symptom", "history")
     builder.add_edge("history", "reasoning")
     builder.add_edge("ask_patient", "reasoning")  # Loop back for more info
-    builder.add_edge("reasoning", "fhir")
+    # NOTE: No fixed edge from "reasoning" — handled by conditional below
     builder.add_edge("fhir", "uhi_discovery")
     builder.add_edge("uhi_confirm", "notify_patient")
     builder.add_edge("notify_patient", END)
-    
-    # Emergency routing - CRITICAL FIX: added edge to END
     builder.add_edge("emergency", END)
     
-    # Conditional edges
+    # Conditional edges (nodes with branching logic)
     builder.add_conditional_edges("steward", route_after_steward)
     builder.add_conditional_edges("reasoning", route_after_reasoning)
     builder.add_conditional_edges("uhi_discovery", route_after_uhi_discovery)

@@ -1,5 +1,5 @@
 """DocSync Agents module."""
-from .steward import steward_node, emergency_node
+from .steward import steward_node
 from .symptom import symptom_node
 from .history import history_node, update_patient_history
 from .reasoning import reasoning_node, ask_patient_node

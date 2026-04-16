@@ -21,8 +21,8 @@ def get_llm():
         try:
             from langchain_openai import ChatOpenAI
             _llm = ChatOpenAI(
-                api_key=config.ai.minimax_api_key,
-                base_url=config.ai.minimax_api_base,
+                api_key=config.ai.openai_api_key,
+                base_url=config.ai.openai_api_base,
                 model=config.ai.model_name,
                 temperature=0.3,
                 max_retries=2,

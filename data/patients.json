@@ -1,0 +1,198 @@
+{
+  "patients": [
+    {
+      "id": "P001",
+      "phone_number": "+919876543210",
+      "name": "Ravi Shankar",
+      "age": 52,
+      "gender": "Male",
+      "medical_history": [
+        {"condition": "Type 2 Diabetes", "diagnosed": "2019-06-15", "status": "managed"},
+        {"condition": "Hypertension", "diagnosed": "2020-01-10", "status": "managed"}
+      ],
+      "allergies": ["Penicillin"],
+      "current_medications": ["Metformin 500mg", "Lisinopril 10mg"],
+      "past_sessions": [
+        {
+          "date": "2025-12-01",
+          "message": "I've been experiencing numbness in my feet for the past week",
+          "symptoms": ["pain", "fatigue"],
+          "severity": "moderate",
+          "diagnosis": "Diabetic neuropathy — early peripheral nerve involvement",
+          "doctor_assigned": "Dr. Priya Sharma",
+          "outcome": "Referred to endocrinologist. Started on gabapentin 100mg."
+        }
+      ],
+      "story": "Ravi is a 52-year-old school teacher from Bangalore managing diabetes and hypertension. He visits regularly for diabetic check-ups. Today he complains of persistent headache and blurred vision for 3 days — could be a hypertensive crisis."
+    },
+
+    {
+      "id": "P002",
+      "phone_number": "+919876543211",
+      "name": "Ananya Iyer",
+      "age": 28,
+      "gender": "Female",
+      "medical_history": [
+        {"condition": "Asthma", "diagnosed": "2010-03-20", "status": "managed"},
+        {"condition": "Iron Deficiency Anemia", "diagnosed": "2023-09-05", "status": "active"}
+      ],
+      "allergies": ["Sulfa drugs", "Dust mites"],
+      "current_medications": ["Salbutamol inhaler PRN", "Ferrous sulfate 200mg"],
+      "past_sessions": [
+        {
+          "date": "2025-11-15",
+          "message": "My asthma has been getting worse, especially at night. I'm using my inhaler 4 times a day now",
+          "symptoms": ["cough", "fatigue"],
+          "severity": "moderate",
+          "diagnosis": "Uncontrolled asthma — step-up therapy needed",
+          "doctor_assigned": "Dr. Anjali Reddy",
+          "outcome": "Added Fluticasone 250mcg inhaler. Advised to avoid triggers."
+        }
+      ],
+      "story": "Ananya is a 28-year-old software engineer who has had asthma since childhood. She recently moved to a new apartment and her symptoms have worsened. Today she messages about severe wheezing and difficulty breathing after exposure to construction dust near her building."
+    },
+
+    {
+      "id": "P003",
+      "phone_number": "+919876543212",
+      "name": "Mohammed Farhan",
+      "age": 45,
+      "gender": "Male",
+      "medical_history": [
+        {"condition": "Coronary Artery Disease", "diagnosed": "2022-08-12", "status": "managed"},
+        {"condition": "Hyperlipidemia", "diagnosed": "2021-04-01", "status": "managed"}
+      ],
+      "allergies": [],
+      "current_medications": ["Aspirin 75mg", "Atorvastatin 40mg", "Metoprolol 50mg"],
+      "past_sessions": [
+        {
+          "date": "2025-10-20",
+          "message": "I've been feeling more tired than usual and sometimes get pain in my left arm during walks",
+          "symptoms": ["pain", "fatigue"],
+          "severity": "severe",
+          "diagnosis": "Possible angina — needs urgent cardiology review",
+          "doctor_assigned": "Dr. Rajesh Kumar",
+          "outcome": "ECG ordered. Stress test scheduled. Advised to avoid exertion."
+        }
+      ],
+      "story": "Farhan is a 45-year-old businessman with known heart disease. He had a stent placed 2 years ago. Today he messages about sudden chest tightness and sweating — this should trigger the EMERGENCY pathway immediately."
+    },
+
+    {
+      "id": "P004",
+      "phone_number": "+919876543213",
+      "name": "Lakshmi Devi",
+      "age": 67,
+      "gender": "Female",
+      "medical_history": [
+        {"condition": "Osteoarthritis", "diagnosed": "2018-11-30", "status": "active"},
+        {"condition": "Type 2 Diabetes", "diagnosed": "2015-02-14", "status": "managed"},
+        {"condition": "Hypothyroidism", "diagnosed": "2019-07-22", "status": "managed"}
+      ],
+      "allergies": ["Ibuprofen", "Shellfish"],
+      "current_medications": ["Paracetamol 500mg PRN", "Metformin 1000mg", "Levothyroxine 50mcg", "Calcium + Vitamin D"],
+      "past_sessions": [
+        {
+          "date": "2025-09-10",
+          "message": "My knee pain is getting worse. I can barely walk up the stairs now",
+          "symptoms": ["pain"],
+          "severity": "severe",
+          "diagnosis": "Worsening osteoarthritis — knee replacement discussion needed",
+          "doctor_assigned": "Dr. Priya Sharma",
+          "outcome": "X-ray ordered. Referred to orthopedics. Started physiotherapy."
+        }
+      ],
+      "story": "Lakshmi is a 67-year-old retired government clerk. She has multiple chronic conditions and manages several medications. Today she reports severe joint pain, swelling in both knees, and extreme fatigue — she's worried about a new flare-up."
+    },
+
+    {
+      "id": "P005",
+      "phone_number": "+919876543214",
+      "name": "Arjun Nair",
+      "age": 19,
+      "gender": "Male",
+      "medical_history": [],
+      "allergies": [],
+      "current_medications": [],
+      "past_sessions": [],
+      "story": "Arjun is a 19-year-old college student with no significant medical history. He is a first-time user of DocSync. He messages about a fever and sore throat that started 2 days ago after his friend tested positive for COVID. This tests the NEW PATIENT flow with no prior history."
+    },
+
+    {
+      "id": "P006",
+      "phone_number": "+919876543215",
+      "name": "Priya Menon",
+      "age": 34,
+      "gender": "Female",
+      "medical_history": [
+        {"condition": "Generalized Anxiety Disorder", "diagnosed": "2021-05-10", "status": "managed"},
+        {"condition": "Migraine", "diagnosed": "2020-08-15", "status": "active"}
+      ],
+      "allergies": ["Aspirin"],
+      "current_medications": ["Escitalopram 10mg", "Sumatriptan 50mg PRN"],
+      "past_sessions": [
+        {
+          "date": "2026-01-05",
+          "message": "I am having the worst migraine of my life. Throbbing pain on the right side, nausea, can't look at light",
+          "symptoms": ["headache", "nausea", "dizziness"],
+          "severity": "severe",
+          "diagnosis": "Severe migraine with aura — rule out secondary causes",
+          "doctor_assigned": "Dr. Rajesh Kumar",
+          "outcome": "Given Sumatriptan 100mg. MRI brain ordered to rule out secondary causes."
+        }
+      ],
+      "story": "Priya is a 34-year-old graphic designer who suffers from chronic migraines and anxiety. She messages today about a sudden severe headache that is different from her usual migraines — accompanied by slurred speech and face drooping. This should trigger the STROKE emergency pathway."
+    }
+  ],
+
+  "demo_scenarios": [
+    {
+      "name": "Normal Flow — Headache",
+      "patient_id": "P001",
+      "test_message": "I have been having a persistent headache for the past 3 days, along with blurred vision. My blood pressure readings at home show 165/95.",
+      "expected_path": "steward → symptom → history → reasoning → fhir → uhi_discovery",
+      "expected_symptoms": ["headache", "pain"],
+      "expected_severity": "moderate"
+    },
+    {
+      "name": "Emergency — Chest Pain",
+      "patient_id": "P003",
+      "test_message": "I'm having severe chest tightness and sweating. Pain is radiating to my left arm. I feel like something is very wrong.",
+      "expected_path": "steward → emergency → END",
+      "expected_red_flags": ["chest_pain"],
+      "expected_severity": "emergency"
+    },
+    {
+      "name": "Emergency — Stroke Symptoms",
+      "patient_id": "P006",
+      "test_message": "My face is drooping on one side and my speech is slurred. This headache is different from my usual migraines.",
+      "expected_path": "steward → emergency → END",
+      "expected_red_flags": ["stroke"],
+      "expected_severity": "emergency"
+    },
+    {
+      "name": "Normal Flow — New Patient",
+      "patient_id": "P005",
+      "test_message": "Hi, I've had a fever and sore throat for 2 days. My friend just tested positive for COVID. I'm worried.",
+      "expected_path": "steward → symptom → history → reasoning → fhir → uhi_discovery",
+      "expected_symptoms": ["fever"],
+      "expected_severity": "mild"
+    },
+    {
+      "name": "Normal Flow — Chronic Pain",
+      "patient_id": "P004",
+      "test_message": "My knee pain is extremely bad today. Both knees are swollen and I feel exhausted. I could barely get out of bed.",
+      "expected_path": "steward → symptom → history → reasoning → fhir → uhi_discovery",
+      "expected_symptoms": ["pain", "fatigue"],
+      "expected_severity": "severe"
+    },
+    {
+      "name": "Normal Flow — Breathing Issues",
+      "patient_id": "P002",
+      "test_message": "I'm having trouble breathing after being exposed to construction dust near my apartment. My inhaler isn't helping much.",
+      "expected_path": "steward → emergency → END",
+      "expected_red_flags": ["breathing"],
+      "expected_severity": "emergency"
+    }
+  ]
+}
