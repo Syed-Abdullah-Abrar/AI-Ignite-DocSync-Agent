@@ -91,9 +91,23 @@ I have been having a persistent headache for the past 3 days, along with blurred
 > - *Ravi's underlying diabetes and hypertension.*
 > - *And a critical red alert: Penicillin Allergy.*
 >
-> *Before the patient even walks in the door, the doctor has a highly structured, accurate, and safe medical context. The doctor clicks 'Accept Appointment', and the handshake is complete."*
+> *Before the patient even walks in the door, the doctor has a highly structured, accurate, and safe medical context.*"
 
-**[Click 'Accept Appointment', show the success modal, then switch back to the Patient chat tab]**
+**[Click 'Accept Appointment']**
+
+> *"Here's the magic. When Dr. Sharma clicks Accept, we trigger a real-time UHI confirmation."*
+
+**[A browser prompt will appear asking for a phone number. Type YOUR verified phone number (e.g., +919876543210) and hit Enter/OK]**
+
+> *"DocSync instantly completes the handshake and fires a secure SMS notification back to the patient. I'm putting my own phone number in..."*
+
+**[The Success Modal appears on screen. Hold up your phone to the judges or bring it on screen so they can see the SMS arrive!]**
+
+> *"And there it is. The patient just received an SMS from the hospital: 'Hello Ravi Shankar, your appointment with Dr. Sharma has been confirmed...'. 
+>
+> That is a complete, closed-loop synchronous healthcare transaction, powered by AI and ABDM, in under 20 seconds."*
+
+**[Switch back to the Patient chat tab]**
 
 ---
 

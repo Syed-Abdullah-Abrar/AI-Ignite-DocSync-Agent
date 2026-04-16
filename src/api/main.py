@@ -249,6 +249,27 @@ async def chat_message(request: Request):
     return response
 
 
+from pydantic import BaseModel
+
+class AppointmentAcceptRequest(BaseModel):
+    patient_name: str
+    phone_number: str
+    doctor_name: str
+    appointment_time: str
+
+@app.post("/api/appointments/accept")
+async def accept_appointment(req: AppointmentAcceptRequest):
+    """Called by Doctor's Dashboard to accept appointment & trigger SMS."""
+    from src.api.twilio_client import send_appointment_sms
+    # Trigger Twilio SMS to the patient
+    success = send_appointment_sms(
+        phone_number=req.phone_number,
+        patient_name=req.patient_name,
+        doctor_name=req.doctor_name,
+        appointment_time=req.appointment_time
+    )
+    return {"status": "confirmed", "sms_sent": success}
+
 @app.get("/")
 async def root():
     """Root endpoint — redirect to chat UI."""

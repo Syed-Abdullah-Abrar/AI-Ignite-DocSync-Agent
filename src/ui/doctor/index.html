@@ -242,8 +242,36 @@
             raw.style.display = raw.style.display === 'none' || raw.style.display === '' ? 'block' : 'none';
         }
 
-        function acceptAppointment() {
-            document.getElementById('successModal').classList.add('show');
+        async function acceptAppointment() {
+            // For hackathon demo: prompt for real phone number to bypass Twilio trial restrictions
+            const userPhone = prompt("Enter the phone number to send the Twilio SMS confirmation to (must be verified if using Twilio Trial):", "+91");
+            if (!userPhone) return; // User cancelled
+
+            try {
+                // Call the backend to trigger Twilio SMS
+                const btn = document.querySelector('.btn-accept');
+                const originalText = btn.innerText;
+                btn.innerText = 'Accepting...';
+                btn.disabled = true;
+
+                const res = await fetch('/api/appointments/accept', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        patient_name: 'Ravi Shankar',
+                        phone_number: userPhone,
+                        doctor_name: 'Dr. Sharma',
+                        appointment_time: 'Today, 2:30 PM'
+                    })
+                });
+
+                document.getElementById('successModal').classList.add('show');
+                btn.innerText = originalText;
+                btn.disabled = false;
+            } catch (err) {
+                console.error(err);
+                alert("Failed to confirm appointment");
+            }
         }
 
         function closeModal() {
