@@ -3,7 +3,8 @@ UHI Node - ABDM UHI Integration
 
 Doctor discovery and appointment booking via ABDM Unified Health Interface.
 """
-from typing import Literal
+import asyncio
+from typing import Optional
 from src.graph.state import PatientState
 from src.api.uhi_client import UHIClient
 
@@ -31,9 +32,21 @@ def uhi_discovery_node(state: PatientState) -> PatientState:
         "location": "Bangalore"  # Default for hackathon
     }
     
-    doctors = client.search_doctors(search_params)
-    state.doctor_options = doctors
+    # Run async search - handle both Jupyter and standalone contexts
+    try:
+        # Check if there's already a running event loop (Jupyter)
+        loop = asyncio.get_running_loop()
+        # If we're in an event loop, create a task and use asyncio.run_forever trick
+        # or just get the result directly
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(asyncio.run, client.search_doctors(search_params))
+            doctors = future.result()
+    except RuntimeError:
+        # No running event loop - use asyncio.run normally
+        doctors = asyncio.run(client.search_doctors(search_params))
     
+    state.doctor_options = doctors
     return state
 
 
@@ -53,11 +66,28 @@ def uhi_confirm_node(state: PatientState) -> PatientState:
     
     client = UHIClient()
     
-    booking = client.confirm_appointment(
-        doctor=state.selected_doctor,
-        patient_id=state.patient_id or state.phone_number,
-        fhir_report=state.fhir_report
-    )
+    # Run async confirm
+    try:
+        loop = asyncio.get_running_loop()
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(
+                asyncio.run,
+                client.confirm_appointment(
+                    doctor=state.selected_doctor,
+                    patient_id=state.patient_id or state.phone_number,
+                    fhir_report=state.fhir_report
+                )
+            )
+            booking = future.result()
+    except RuntimeError:
+        booking = asyncio.run(
+            client.confirm_appointment(
+                doctor=state.selected_doctor,
+                patient_id=state.patient_id or state.phone_number,
+                fhir_report=state.fhir_report
+            )
+        )
     
     state.appointment_id = booking.get("appointment_id")
     state.booking_confirmed = True

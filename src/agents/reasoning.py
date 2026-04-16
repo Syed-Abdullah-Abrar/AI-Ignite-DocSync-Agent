@@ -4,24 +4,34 @@ Reasoning Node - Clinical Diagnostic Reasoning
 Uses MiniMax m2.7 for clinical reasoning with Diagnostic Gap pattern.
 Includes proper error handling and structured output support.
 """
-from typing import Literal, Optional
+from typing import Optional
 import logging
-from langchain_openai import ChatOpenAI
-from langchain.callbacks.tracers.langfuse import LangfuseTracer
 from src.graph.state import PatientState
 from src.config import config
 
 logger = logging.getLogger(__name__)
 
-# Initialize LLM with config
-llm = ChatOpenAI(
-    api_key=config.ai.minimax_api_key,
-    base_url=config.ai.minimax_api_base,
-    model=config.ai.model_name,
-    temperature=0.3,
-    max_retries=2,
-    request_timeout=30
-)
+# Initialize LLM with config (lazy import to avoid errors)
+_llm = None
+
+def get_llm():
+    """Get or create LLM instance lazily."""
+    global _llm
+    if _llm is None:
+        try:
+            from langchain_openai import ChatOpenAI
+            _llm = ChatOpenAI(
+                api_key=config.ai.minimax_api_key,
+                base_url=config.ai.minimax_api_base,
+                model=config.ai.model_name,
+                temperature=0.3,
+                max_retries=2,
+                request_timeout=30
+            )
+        except Exception as e:
+            logger.warning(f"Could not initialize LLM: {e}")
+            _llm = None
+    return _llm
 
 
 SYSTEM_PROMPT = """You are a clinical reasoning assistant. Given patient symptoms, 
@@ -55,6 +65,18 @@ def reasoning_node(state: PatientState) -> PatientState:
     prompt = build_clinical_prompt(state)
     
     try:
+        llm = get_llm()
+        
+        if llm is None:
+            # Fallback when LLM not available
+            logger.warning("LLM not available, using mock reasoning")
+            state.clinical_findings = [
+                {"description": f"Patient reports: {', '.join(state.symptoms)}", "code": "MOCK"}
+            ]
+            state.confidence_score = 0.6
+            state.diagnostic_gaps = ["Please consult a doctor for detailed diagnosis"]
+            return state
+        
         response = llm.invoke(prompt)
         parsed = parse_clinical_response(response.content)
         

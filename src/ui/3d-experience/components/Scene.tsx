@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Float, Text, Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
@@ -9,14 +9,28 @@ import PatientNode from './PatientNode'
 import DoctorNode from './DoctorNode'
 import ConnectionLines from './ConnectionLines'
 
-// Sample data for visualization
-const SAMPLE_PATIENTS = [
+interface Patient {
+  id: string
+  name: string
+  status: string
+  severity: string
+}
+
+interface Doctor {
+  id: string
+  name: string
+  specialty: string
+  available: boolean
+}
+
+// Fallback data if API is unavailable
+const FALLBACK_PATIENTS: Patient[] = [
   { id: '1', name: 'Patient A', status: 'symptoms_detected', severity: 'moderate' },
   { id: '2', name: 'Patient B', status: 'reasoning', severity: 'mild' },
   { id: '3', name: 'Patient C', status: 'booking', severity: 'mild' },
 ]
 
-const SAMPLE_DOCTORS = [
+const FALLBACK_DOCTORS: Doctor[] = [
   { id: 'd1', name: 'Dr. Sharma', specialty: 'General Physician', available: true },
   { id: 'd2', name: 'Dr. Kumar', specialty: 'Internal Medicine', available: true },
 ]
@@ -25,14 +39,56 @@ export default function Scene() {
   const groupRef = useRef<THREE.Group>(null)
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null)
   const [selectedDoctor, setSelectedDoctor] = useState<string | null>(null)
-  
+  const [patients, setPatients] = useState<Patient[]>(FALLBACK_PATIENTS)
+  const [doctors, setDoctors] = useState<Doctor[]>(FALLBACK_DOCTORS)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Determine API URL based on environment
+        const apiUrl = typeof window !== 'undefined' 
+          ? `${window.location.protocol}//${window.location.hostname}:8000`
+          : 'http://localhost:8000'
+
+        const [patientsRes, doctorsRes] = await Promise.all([
+          fetch(`${apiUrl}/api/patients`),
+          fetch(`${apiUrl}/api/doctors`)
+        ])
+
+        if (patientsRes.ok && doctorsRes.ok) {
+          const patientsData = await patientsRes.json()
+          const doctorsData = await doctorsRes.json()
+          setPatients(patientsData)
+          setDoctors(doctorsData)
+        } else {
+          console.warn('API not available, using fallback data')
+          setError('Using demo data')
+        }
+      } catch (err) {
+        console.warn('Failed to fetch from API, using fallback data:', err)
+        setError('Using demo data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+    
+    // Poll for updates every 30 seconds
+    const interval = setInterval(fetchData, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Slow rotation for ambient feel
   useFrame((state) => {
     if (groupRef.current) {
       groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.1) * 0.1
     }
   })
-  
+
   return (
     <>
       {/* Lighting */}
@@ -61,12 +117,12 @@ export default function Scene() {
         
         {/* Patient Nodes (left side) */}
         <group position={[-5, 0, 0]}>
-          {SAMPLE_PATIENTS.map((patient, index) => (
+          {patients.map((patient, index) => (
             <PatientNode
               key={patient.id}
               patient={patient}
               index={index}
-              total={SAMPLE_PATIENTS.length}
+              total={patients.length}
               onSelect={() => setSelectedPatient(
                 selectedPatient === patient.id ? null : patient.id
               )}
@@ -77,12 +133,12 @@ export default function Scene() {
         
         {/* Doctor Nodes (right side) */}
         <group position={[5, 0, 0]}>
-          {SAMPLE_DOCTORS.map((doctor, index) => (
+          {doctors.map((doctor, index) => (
             <DoctorNode
               key={doctor.id}
               doctor={doctor}
               index={index}
-              total={SAMPLE_DOCTORS.length}
+              total={doctors.length}
               onSelect={() => setSelectedDoctor(
                 selectedDoctor === doctor.id ? null : doctor.id
               )}
@@ -93,8 +149,8 @@ export default function Scene() {
         
         {/* Connection Lines */}
         <ConnectionLines 
-          patients={SAMPLE_PATIENTS}
-          doctors={SAMPLE_DOCTORS}
+          patients={patients}
+          doctors={doctors}
           selectedPatient={selectedPatient}
           selectedDoctor={selectedDoctor}
         />

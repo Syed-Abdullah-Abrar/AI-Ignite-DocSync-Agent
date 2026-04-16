@@ -6,8 +6,13 @@ Optimized with proper indexes for query performance.
 """
 from sqlalchemy import Column, String, Integer, DateTime, Text, Boolean, JSON, Index, Float, ForeignKey
 from sqlalchemy import CheckConstraint
-from datetime import datetime
+from datetime import datetime, timezone
 from src.db.connection import Base
+
+
+def utc_now() -> datetime:
+    """Get current UTC time as timezone-aware datetime."""
+    return datetime.now(timezone.utc)
 
 
 class Patient(Base):
@@ -17,8 +22,8 @@ class Patient(Base):
     id = Column(String, primary_key=True)
     phone_number = Column(String, unique=True, index=True)
     name = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
     
     # Medical data (JSON for flexibility)
     medical_history = Column(JSON, default=list)
@@ -37,7 +42,7 @@ class Session(Base):
     
     id = Column(String, primary_key=True)
     patient_id = Column(String, ForeignKey("patients.id", ondelete="CASCADE"), index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
     
     # Session data
     raw_message = Column(Text)
@@ -47,7 +52,6 @@ class Session(Base):
     
     # Clinical reasoning
     clinical_findings = Column(JSON, default=list)
-    # FIX: Changed from String to Float for proper numeric storage
     confidence_score = Column(Float, nullable=True)
     
     # FHIR report reference
@@ -75,8 +79,8 @@ class Appointment(Base):
     doctor_id = Column(String, index=True)
     
     # Timing
-    requested_at = Column(DateTime, default=datetime.utcnow)
-    confirmed_at = Column(DateTime, nullable=True)
+    requested_at = Column(DateTime(timezone=True), default=utc_now)
+    confirmed_at = Column(DateTime(timezone=True), nullable=True)
     
     # Details
     doctor_name = Column(String)

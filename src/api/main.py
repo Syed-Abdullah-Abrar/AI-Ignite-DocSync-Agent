@@ -3,6 +3,7 @@ DocSync API - FastAPI Application
 
 Main entry point for the DocSync backend service.
 """
+from datetime import datetime, timezone
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -10,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 
 from src.api.callbacks import router as uhi_router
+from src.api.endpoints import router as dashboard_router
 from src.api.schemas import HealthCheckResponse
 from src.graph.state import get_graph
 
@@ -47,15 +49,15 @@ app.add_middleware(
 
 # Include routers
 app.include_router(uhi_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
     """Health check endpoint."""
-    from datetime import datetime
     return HealthCheckResponse(
         status="healthy",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
 
 
@@ -87,7 +89,7 @@ async def whatsapp_webhook(request: Request):
     # Run pipeline - use thread pool to avoid blocking
     graph = get_graph()
     
-    # FIX: Run sync invoke in thread pool for async context
+    # Run sync invoke in thread pool for async context
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(
         _executor,

@@ -1,7 +1,117 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+.env.example
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.json
+service-account-key.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+venv.bak/
+.venv/
+ENV/
+.eggs/
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+docsync_testing.ipynb
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# React/Next.js
+.next/
+out/
+.nuxt/
+.cache/
+dist/
+build/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+coverage/
+.nyc_output/
+
+# Aider & AI
+.aider*
+.aider.conf
+.aider.history
+
+# Skills (external)
+skills_agents/
+
+# Project-specific docs (development artifacts)
 AIDER_Soul.md
 Checkpoints.md
 GEMINI.md
 Guidelines.md
 PLAN_brid.md
-skills_agents/
-.aider*
+*.draft.md
+*.backup.md
+
+# Langfuse (if local)
+.langfuse/
+
+# Railway/Render
+.railway/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Gradle
+.gradle/
+build/
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup

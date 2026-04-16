@@ -3,7 +3,7 @@ FHIR Node - FHIR DiagnosticReport Generation
 
 Generates FHIR R4 compliant DiagnosticReports from clinical findings.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from src.graph.state import PatientState
 from src.fhir.generators import create_diagnostic_report
 
@@ -27,7 +27,7 @@ def fhir_node(state: PatientState) -> PatientState:
         observations=state.clinical_findings,
         symptoms=state.symptoms,
         session_id=state.session_id,
-        generated_at=datetime.utcnow()
+        generated_at=datetime.now(timezone.utc)
     )
     
     state.fhir_report = report

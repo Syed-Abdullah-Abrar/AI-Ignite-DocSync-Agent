@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Patient {
   id: string
@@ -14,18 +14,34 @@ interface Doctor {
   name: string
   specialty: string
   available: boolean
+  hospital?: string
+  distance?: string
 }
 
-const SAMPLE_PATIENTS: Patient[] = [
+interface Stats {
+  active_patients: number
+  in_reasoning: number
+  booking_confirmed: number
+  available_doctors: number
+}
+
+const FALLBACK_PATIENTS: Patient[] = [
   { id: '1', name: 'Patient A', status: 'symptoms_detected', severity: 'moderate' },
   { id: '2', name: 'Patient B', status: 'reasoning', severity: 'mild' },
   { id: '3', name: 'Patient C', status: 'booking', severity: 'mild' },
 ]
 
-const SAMPLE_DOCTORS: Doctor[] = [
+const FALLBACK_DOCTORS: Doctor[] = [
   { id: 'd1', name: 'Dr. Sharma', specialty: 'General Physician', available: true },
   { id: 'd2', name: 'Dr. Kumar', specialty: 'Internal Medicine', available: true },
 ]
+
+const FALLBACK_STATS: Stats = {
+  active_patients: 3,
+  in_reasoning: 1,
+  booking_confirmed: 1,
+  available_doctors: 2,
+}
 
 const STATUS_LABELS: Record<string, string> = {
   symptoms_detected: 'Symptoms Detected',
@@ -37,15 +53,92 @@ export default function Interface() {
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null)
   const [selectedDoctor, setSelectedDoctor] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'patients' | 'doctors'>('patients')
-  
+  const [patients, setPatients] = useState<Patient[]>(FALLBACK_PATIENTS)
+  const [doctors, setDoctors] = useState<Doctor[]>(FALLBACK_DOCTORS)
+  const [stats, setStats] = useState<Stats>(FALLBACK_STATS)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [bookingStatus, setBookingStatus] = useState<string | null>(null)
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`
+
+        const [patientsRes, doctorsRes, statsRes] = await Promise.all([
+          fetch(`${apiUrl}/api/patients`),
+          fetch(`${apiUrl}/api/doctors`),
+          fetch(`${apiUrl}/api/stats`)
+        ])
+
+        if (patientsRes.ok && doctorsRes.ok && statsRes.ok) {
+          const [patientsData, doctorsData, statsData] = await Promise.all([
+            patientsRes.json(),
+            doctorsRes.json(),
+            statsRes.json()
+          ])
+          setPatients(patientsData)
+          setDoctors(doctorsData)
+          setStats(statsData)
+        } else {
+          console.warn('API not available, using fallback data')
+          setError('Using demo data')
+        }
+      } catch (err) {
+        console.warn('Failed to fetch from API:', err)
+        setError('Using demo data')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+
+    // Poll for updates every 10 seconds
+    const interval = setInterval(fetchData, 10000)
+    return () => clearInterval(interval)
+  }, [])
+
   const canBook = selectedPatient && selectedDoctor
-  
-  const handleBook = () => {
-    if (canBook) {
-      alert(`Booking appointment:\nPatient: ${selectedPatient}\nDoctor: ${selectedDoctor}`)
+
+  const handleBook = async () => {
+    if (!canBook) return
+
+    setBookingStatus('Booking...')
+    try {
+      const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`
+      const response = await fetch(`${apiUrl}/api/book`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patient_id: selectedPatient,
+          doctor_id: selectedDoctor,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setBookingStatus(`✅ Booked: ${result.appointment_id}`)
+        // Refresh data after booking
+        setTimeout(() => {
+          setSelectedPatient(null)
+          setSelectedDoctor(null)
+          setBookingStatus(null)
+          // Trigger data refresh
+          window.location.reload()
+        }, 2000)
+      } else {
+        setBookingStatus(`❌ ${result.message}`)
+      }
+    } catch (err) {
+      setBookingStatus('❌ Booking failed')
     }
   }
-  
+
   return (
     <div style={{
       position: 'absolute',
@@ -79,10 +172,10 @@ export default function Interface() {
           color: '#666',
           margin: '4px 0 0 0'
         }}>
-          Healthcare Coordination Visualization
+          Healthcare Coordination Visualization {error && <span style={{ color: '#f59e0b' }}>({error})</span>}
         </p>
       </div>
-      
+
       {/* Stats */}
       <div style={{
         position: 'absolute',
@@ -92,11 +185,11 @@ export default function Interface() {
         gap: '24px',
         pointerEvents: 'auto'
       }}>
-        <StatCard label='Active Patients' value='3' color='#4a9eff' />
-        <StatCard label='In Reasoning' value='1' color='#8b5cf6' />
-        <StatCard label='Available Doctors' value='2' color='#10b981' />
+        <StatCard label='Active Patients' value={stats.active_patients.toString()} color='#4a9eff' />
+        <StatCard label='In Reasoning' value={stats.in_reasoning.toString()} color='#8b5cf6' />
+        <StatCard label='Available Doctors' value={stats.available_doctors.toString()} color='#10b981' />
       </div>
-      
+
       {/* Control Panel */}
       <div style={{
         position: 'absolute',
@@ -135,11 +228,11 @@ export default function Interface() {
             </button>
           ))}
         </div>
-        
+
         {/* List */}
         <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-          {activeTab === 'patients' 
-            ? SAMPLE_PATIENTS.map(patient => (
+          {activeTab === 'patients'
+            ? patients.map(patient => (
                 <div
                   key={patient.id}
                   onClick={() => setSelectedPatient(
@@ -151,11 +244,11 @@ export default function Interface() {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     cursor: 'pointer',
-                    background: selectedPatient === patient.id 
-                      ? 'rgba(74, 158, 255, 0.2)' 
+                    background: selectedPatient === patient.id
+                      ? 'rgba(74, 158, 255, 0.2)'
                       : 'transparent',
-                    borderLeft: selectedPatient === patient.id 
-                      ? '3px solid #4a9eff' 
+                    borderLeft: selectedPatient === patient.id
+                      ? '3px solid #4a9eff'
                       : '3px solid transparent'
                   }}
                 >
@@ -164,13 +257,13 @@ export default function Interface() {
                       {patient.name}
                     </div>
                     <div style={{ fontSize: '11px', color: '#666' }}>
-                      {STATUS_LABELS[patient.status]}
+                      {STATUS_LABELS[patient.status] || patient.status}
                     </div>
                   </div>
                   <SeverityBadge severity={patient.severity} />
                 </div>
               ))
-            : SAMPLE_DOCTORS.map(doctor => (
+            : doctors.map(doctor => (
                 <div
                   key={doctor.id}
                   onClick={() => doctor.available && setSelectedDoctor(
@@ -183,11 +276,11 @@ export default function Interface() {
                     alignItems: 'center',
                     cursor: doctor.available ? 'pointer' : 'not-allowed',
                     opacity: doctor.available ? 1 : 0.5,
-                    background: selectedDoctor === doctor.id 
-                      ? 'rgba(16, 185, 129, 0.2)' 
+                    background: selectedDoctor === doctor.id
+                      ? 'rgba(16, 185, 129, 0.2)'
                       : 'transparent',
-                    borderLeft: selectedDoctor === doctor.id 
-                      ? '3px solid #10b981' 
+                    borderLeft: selectedDoctor === doctor.id
+                      ? '3px solid #10b981'
                       : '3px solid transparent'
                   }}
                 >
@@ -204,32 +297,32 @@ export default function Interface() {
               ))
           }
         </div>
-        
+
         {/* Book Button */}
         <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <button
             onClick={handleBook}
-            disabled={!canBook}
+            disabled={!canBook || bookingStatus !== null}
             style={{
               width: '100%',
               padding: '12px',
-              background: canBook 
-                ? 'linear-gradient(135deg, #10b981, #059669)' 
+              background: canBook && !bookingStatus
+                ? 'linear-gradient(135deg, #10b981, #059669)'
                 : '#333',
               border: 'none',
               borderRadius: '8px',
               color: '#fff',
               fontSize: '14px',
               fontWeight: 600,
-              cursor: canBook ? 'pointer' : 'not-allowed',
+              cursor: canBook && !bookingStatus ? 'pointer' : 'not-allowed',
               transition: 'all 0.2s ease'
             }}
           >
-            {canBook ? 'Confirm Booking' : 'Select Patient & Doctor'}
+            {bookingStatus || (canBook ? 'Confirm Booking' : 'Select Patient & Doctor')}
           </button>
         </div>
       </div>
-      
+
       {/* Instructions */}
       <div style={{
         position: 'absolute',
@@ -272,15 +365,15 @@ function SeverityBadge({ severity }: { severity: string }) {
     moderate: '#f59e0b',
     severe: '#ef4444'
   }
-  
+
   return (
     <span style={{
       padding: '4px 8px',
       borderRadius: '4px',
       fontSize: '10px',
       fontWeight: 600,
-      background: `${colors[severity]}22`,
-      color: colors[severity],
+      background: `${colors[severity] || '#666'}22`,
+      color: colors[severity] || '#666',
       textTransform: 'uppercase'
     }}>
       {severity}

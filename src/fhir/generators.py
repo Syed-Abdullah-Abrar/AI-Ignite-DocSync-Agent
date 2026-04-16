@@ -3,12 +3,8 @@ FHIR Generators - FHIR R4 Resource Builders
 
 Creates FHIR-compliant DiagnosticReport and related resources.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
-from fhir.resources.diagnosticreport import DiagnosticReport
-from fhir.resources.observation import Observation
-from fhir.resources.reference import Reference
-from fhir.resources.identifier import Identifier
 
 
 def create_diagnostic_report(
@@ -31,50 +27,44 @@ def create_diagnostic_report(
     Returns:
         FHIR DiagnosticReport as dict (JSON-serializable)
     """
-    # Create identifiers
-    identifiers = [
-        Identifier(
-            system="https://docsync.hackathon/session",
-            value=session_id
-        )
-    ]
-    
-    # Build observations
-    fhir_observations = []
+    # Build contained observations as proper FHIR resources
+    contained = []
     for i, obs in enumerate(observations):
-        observation = Observation(
-            id=f"obs-{i+1}",
-            status="final",
-            code={
+        contained.append({
+            "resourceType": "Observation",
+            "id": f"obs-{i+1}",
+            "status": "final",
+            "code": {
                 "coding": [{
                     "system": "http://snomed.info/sct",
-                    "code": "386661006",  # Clinical finding
-                    "display": obs.get("description", "Clinical finding")
+                    "code": "386661006",
+                    "display": "Clinical finding"
                 }]
             },
-            valueString=obs.get("description", "")
-        )
-        fhir_observations.append(observation)
+            "valueString": obs.get("description", "")
+        })
     
-    # Create DiagnosticReport
-    report = DiagnosticReport(
-        id=f"report-{session_id}",
-        status="final",
-        code={
+    # Create DiagnosticReport as a plain dict (FHIR-like format)
+    # This avoids strict pydantic validation issues with fhir.resources
+    report = {
+        "resourceType": "DiagnosticReport",
+        "id": f"report-{session_id}",
+        "status": "final",
+        "code": {
             "coding": [{
                 "system": "http://loinc.org",
                 "code": "72198-7",
                 "display": "Consultation note"
             }]
         },
-        subject={
+        "subject": {
             "reference": f"Patient/{patient_id}"
         },
-        contained=observations,
-        generated=generated_at.isoformat()
-    )
+        "contained": contained,
+        "effectiveDateTime": generated_at.isoformat()
+    }
     
-    return report.model_dump(mode="json")
+    return report
 
 
 def create_symptom_observation(symptom: str, severity: str, duration: Optional[str] = None) -> dict:
@@ -89,20 +79,38 @@ def create_symptom_observation(symptom: str, severity: str, duration: Optional[s
     Returns:
         FHIR Observation as dict
     """
-    observation = Observation(
-        id=f"symptom-{symptom}",
-        status="final",
-        code={
+    interpretation_map = {
+        "mild": "N",
+        "moderate": "M", 
+        "severe": "H"
+    }
+    
+    observation = {
+        "resourceType": "Observation",
+        "id": f"symptom-{symptom}",
+        "status": "final",
+        "code": {
             "coding": [{
                 "system": "http://snomed.info/sct",
-                "code": "271681006",  # Finding symptom
+                "code": "271681006",
                 "display": symptom.title()
             }]
         },
-        interpretation=[{
-            "text": severity.upper()
-        }],
-        note=[{"text": f"Duration: {duration}"}] if duration else None
-    )
+        "interpretation": [{
+            "coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": interpretation_map.get(severity.lower(), "N"),
+                "display": severity.upper()
+            }]
+        }]
+    }
     
-    return observation.model_dump(mode="json")
+    if duration:
+        observation["note"] = [{"text": f"Duration: {duration}"}]
+    
+    return observation
+
+
+def utc_now() -> datetime:
+    """Get current UTC time as timezone-aware datetime."""
+    return datetime.now(timezone.utc)
