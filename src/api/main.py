@@ -123,6 +123,7 @@ async def chat_message(request: Request):
     and orchestrates the LangGraph pipeline.
     """
     import asyncio
+    import re
     
     body = await request.json()
     
@@ -133,6 +134,47 @@ async def chat_message(request: Request):
     if not message:
         return {"error": "No message provided"}
     
+    # ── Conversational pre-filter ──
+    # Detect greetings and non-medical messages to avoid running the full pipeline
+    msg_lower = message.strip().lower()
+    
+    GREETINGS = {"hello", "hi", "hey", "good morning", "good evening", "good afternoon",
+                 "what's up", "sup", "howdy", "namaste", "namaskar", "hola"}
+    THANKS = {"thank you", "thanks", "thank u", "thx", "ty", "dhanyavaad", "shukriya"}
+    HELP_WORDS = {"help", "what can you do", "how does this work", "what is this",
+                  "who are you", "what are you"}
+    
+    if msg_lower in GREETINGS or any(msg_lower.startswith(g) for g in GREETINGS):
+        return {
+            "status": "greeting",
+            "message": "Hello! 👋 I'm DocSync, your healthcare assistant. Please describe your symptoms and I'll help connect you with the right doctor.\n\nFor example: \"I have a headache for 3 days\" or \"I'm having chest pain\"",
+            "symptoms": [], "severity": None, "has_red_flags": False,
+            "booking_confirmed": False, "appointment_id": None,
+            "doctor_options": [], "clinical_findings": [],
+            "fhir_report": None, "confidence_score": 0, "medical_history": [],
+        }
+    
+    if any(t in msg_lower for t in THANKS):
+        return {
+            "status": "thanks",
+            "message": "You're welcome! 🙏 Take care of your health. If you experience any new symptoms, don't hesitate to reach out.",
+            "symptoms": [], "severity": None, "has_red_flags": False,
+            "booking_confirmed": False, "appointment_id": None,
+            "doctor_options": [], "clinical_findings": [],
+            "fhir_report": None, "confidence_score": 0, "medical_history": [],
+        }
+    
+    if any(h in msg_lower for h in HELP_WORDS):
+        return {
+            "status": "help",
+            "message": "I'm DocSync — an AI healthcare coordination agent. Here's what I can do:\n\n🔍 **Symptom Analysis** — Describe your symptoms and I'll extract and analyze them\n🏥 **Doctor Matching** — I'll find available specialists near you\n📋 **FHIR Reports** — I generate clinical reports that any hospital can read\n🚨 **Emergency Detection** — I instantly detect life-threatening symptoms\n\nTry describing how you're feeling!",
+            "symptoms": [], "severity": None, "has_red_flags": False,
+            "booking_confirmed": False, "appointment_id": None,
+            "doctor_options": [], "clinical_findings": [],
+            "fhir_report": None, "confidence_score": 0, "medical_history": [],
+        }
+    
+    # ── Run the medical pipeline ──
     from src.graph.state import PatientState
     state = PatientState(
         phone_number=phone,
@@ -157,6 +199,7 @@ async def chat_message(request: Request):
     error_message = result.get("error_message")
     doctor_options = result.get("doctor_options", [])
     fhir_report = result.get("fhir_report")
+    medical_history = result.get("medical_history", [])
     
     response = {
         "status": "processed",
@@ -170,18 +213,37 @@ async def chat_message(request: Request):
         "clinical_findings": clinical_findings,
         "fhir_report": fhir_report,
         "confidence_score": result.get("confidence_score", 0),
-        "medical_history": result.get("medical_history", []),
+        "medical_history": medical_history,
     }
     
+    # ── Build contextual response message ──
     if has_red_flags:
         response["message"] = error_message
     elif booking_confirmed:
-        response["message"] = f"Appointment booked! ID: {appointment_id}"
-    elif clinical_findings:
-        symptom_text = ', '.join(symptoms) if symptoms else 'your symptoms'
-        response["message"] = f"I understand you're experiencing {symptom_text}. Here are available doctors near you."
+        response["message"] = f"✅ Appointment booked! Your appointment ID is: {appointment_id}"
+    elif symptoms and doctor_options:
+        symptom_text = ', '.join(symptoms)
+        severity_text = f" (severity: {severity})" if severity else ""
+        history_text = ""
+        if medical_history:
+            conditions = [h.get("condition", "") for h in medical_history if isinstance(h, dict)]
+            if conditions:
+                history_text = f"\n\n📋 I found your medical records: {', '.join(conditions)}. This context has been considered in the analysis."
+        response["message"] = (
+            f"Based on your description, I've identified: **{symptom_text}**{severity_text}.\n\n"
+            f"I've analyzed your symptoms and found {len(doctor_options)} available doctor(s) near you."
+            f"{history_text}\n\n"
+            f"👇 See the doctor cards below to book an appointment."
+        )
+    elif symptoms:
+        symptom_text = ', '.join(symptoms)
+        response["message"] = f"I've identified: **{symptom_text}**. Let me look into this further for you."
     else:
-        response["message"] = "Thank you for your message. How can I help you today?"
+        response["message"] = (
+            "I couldn't identify specific symptoms from your message. "
+            "Could you describe what you're feeling in more detail?\n\n"
+            "For example: \"I have a headache and fever for 2 days\" or \"My knee is swollen and painful\""
+        )
     
     return response
 

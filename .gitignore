@@ -2,7 +2,6 @@
 .env
 .env.local
 .env.*.local
-.env.example
 *.pem
 *.key
 *.crt
@@ -89,7 +88,6 @@ coverage/
 skills_agents/
 
 # Project-specific docs (development artifacts)
-AIDER_Soul.md
 Checkpoints.md
 GEMINI.md
 Guidelines.md
@@ -100,8 +98,9 @@ PLAN_brid.md
 # Langfuse (if local)
 .langfuse/
 
-# Railway/Render
+# Railway/Render/Vercel
 .railway/
+.vercel/
 
 # TypeScript
 *.tsbuildinfo
@@ -115,3 +114,4 @@ build/
 target/
 pom.xml.tag
 pom.xml.releaseBackup
+.vercel

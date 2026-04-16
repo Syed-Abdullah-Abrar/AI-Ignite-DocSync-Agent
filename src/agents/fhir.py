@@ -27,7 +27,11 @@ def fhir_node(state: PatientState) -> PatientState:
         observations=state.clinical_findings,
         symptoms=state.symptoms,
         session_id=state.session_id,
-        generated_at=datetime.now(timezone.utc)
+        generated_at=datetime.now(timezone.utc),
+        severity=state.severity,
+        medical_history=state.medical_history,
+        allergies=state.allergies,
+        current_medications=state.current_medications,
     )
     
     state.fhir_report = report

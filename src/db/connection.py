@@ -29,8 +29,12 @@ def _get_db_url() -> str:
         # postgresql://... → postgresql+asyncpg://...
         return raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
     
-    # Development: use SQLite file in project root
-    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docsync.db")
+    # Development: use SQLite file
+    if os.getenv("VERCEL"):
+        # Vercel: only /tmp is writable
+        db_path = "/tmp/docsync.db"
+    else:
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docsync.db")
     return f"sqlite+aiosqlite:///{db_path}"
 
 
