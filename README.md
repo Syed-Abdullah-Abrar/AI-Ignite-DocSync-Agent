@@ -1,79 +1,309 @@
-# 🏥 DocSync
+# DocSync - Healthcare Coordination Agent
 
-**DocSync** is an advanced AI healthcare coordination agent built for the **AI Ignite Hackathon** at HKBK College of Engineering. It serves as a seamless, fast intermediate channel between patients and doctors, leveraging multi-agent orchestration to provide clinical reasoning, historical context, and automated appointment booking.
+> AI-powered healthcare coordination bridging WhatsApp patients to doctors via ABDM UHI APIs
 
----
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green.svg)](https://fastapi.tiangolo.com/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-0.1+-purple.svg)](https://langchain.readthedocs.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 🌟 Vision: AI for Impact
-In the bustling healthcare landscape of Bangalore, the gap between a patient's initial symptoms and a doctor's consultation can be fraught with delays and loss of clinical context. **DocSync** bridges this gap by:
-1. **Empowering Patients:** Providing an intuitive WhatsApp interface for symptom reporting.
-2. **Empowering Doctors:** Delivering structured, FHIR-compliant clinical reports before the patient even walks in.
-3. **Synchronizing Care:** Automating doctor discovery and booking via India's **ABDM Unified Health Interface (UHI)** protocols.
+## Overview
 
+DocSync is an intermediate healthcare coordination agent that bridges patients on WhatsApp to doctors via a specialized dashboard and ABDM UHI APIs. It uses LangGraph to orchestrate:
 
----
+- **Symptom intake** via WhatsApp NLP
+- **Historical context** retrieval from PostgreSQL
+- **Clinical reasoning** with MiniMax m2.7
+- **FHIR R4** diagnostic reports
+- **Doctor discovery & booking** via ABDM UHI
 
-## 🚀 Key Features
-- **WhatsApp Intake (MCP):** Patients communicate naturally with the agent via WhatsApp.
-- **Agentic Reasoning (LangGraph):** A multi-node state machine routes information through symptom analysis, history retrieval, and diagnostic reasoning.
-- **Clinical History Retrieval:** Maintains long-term memory of a patient's previous illnesses and states for better longitudinal care.
-- **FHIR Reporting:** Automatically structures patient data into the global **Fast Healthcare Interoperability Resources (FHIR)** standard.
-- **UHI Discovery & Booking:** Integrates with the **Ayushman Bharat Digital Mission (ABDM)** to search for verified doctors and book real-time appointments.
-- **Human-in-the-Loop:** A robust confirmation bridge ensuring medical safety and data accuracy.
+## Architecture
 
----
-
-## 🛠 Technology Stack
-- **AI Orchestration:** [LangGraph](https://www.langchain.com/langgraph)
-- **Reasoning Engine:** [MiniMax m2.7](https://www.minimax.io/) (High-performance building & tool-calling)
-- **Planning & Validation:** [Gemini 3.1 Pro](https://deepmind.google/technologies/gemini/) (Macro-planning & testing)
-- **Integration Framework:** [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) for WhatsApp.
-- **Healthcare Standards:** `fhir.resources` (Python), ABDM UHI APIs.
-- **Frontend/Dashboard:** [Google Stitch](https://stitch.google.com/) (Rapid UI/UX generation) & Next.js.
-- **Deployment:** [Railway](https://railway.app/) (Backend/DB) & [Vercel](https://vercel.com/) (Frontend).
-- **Observability:** [Langfuse](https://langfuse.com/).
-
----
-
-## 🏗 Architecture
-```text
-[Patient (WhatsApp)] 
-      |
-      v
-[WhatsApp MCP Server] 
-      |
-      v
-[LangGraph State Machine] <--- [Historical Data (PostgreSQL)]
-      | (Nodes: Symptom -> History -> Reasoning -> Booking)
-      v
-[MiniMax m2.7 Reasoning] ----> [FHIR Report Generator]
-      |                              |
-      v                              v
-[ABDM UHI APIs] -------------> [Doctor Dashboard (Vercel)]
-      |                              |
-      v                              v
-[Appointment Booked] <-------- [Doctor Confirmation]
+```
+Patient (WhatsApp) 
+       │
+       ▼
+┌─────────────────┐
+│  steward_node   │ ← Red flag detection (emergencies)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  symptom_node   │ ← NLP symptom extraction
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  history_node  │ ← Patient medical history
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ reasoning_node  │ ← MiniMax m2.7 clinical reasoning
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│    fhir_node    │ ← FHIR DiagnosticReport
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ uhi_discovery   │ ← ABDM UHI doctor search
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ uhi_confirm     │ ← Appointment booking
+└────────┬────────┘
+         │
+         ▼
+   Doctor Dashboard
 ```
 
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Orchestration | LangGraph (Python) |
+| Reasoning Engine | MiniMax m2.7 |
+| Database | PostgreSQL (Railway) |
+| Messaging | WhatsApp MCP |
+| Clinical Standards | FHIR R4 |
+| Discovery & Booking | ABDM UHI Gateway |
+| API | FastAPI |
+| Dashboard | React Three Fiber (3D) |
+| Observability | Langfuse |
+
+## Project Structure
+
+```
+DocSync/
+├── src/
+│   ├── agents/              # LangGraph nodes (clinical logic)
+│   │   ├── steward.py      # Red flag detection
+│   │   ├── symptom.py      # Symptom extraction (NLP)
+│   │   ├── history.py      # Patient medical history
+│   │   ├── reasoning.py    # MiniMax m2.7 clinical reasoning
+│   │   ├── fhir.py         # FHIR DiagnosticReport generation
+│   │   ├── uhi.py          # ABDM UHI doctor discovery/booking
+│   │   └── emergency.py    # Emergency routing
+│   ├── api/                # FastAPI endpoints
+│   │   ├── main.py         # App entry, /health, /whatsapp/webhook
+│   │   ├── callbacks.py    # UHI webhook handlers
+│   │   ├── schemas.py      # Pydantic request/response models
+│   │   └── uhi_client.py  # UHI Gateway HTTP client
+│   ├── db/                  # Database layer
+│   │   ├── connection.py   # Async PostgreSQL (SQLAlchemy)
+│   │   └── models.py       # Patient, Session, Appointment
+│   ├── fhir/
+│   │   └── generators.py   # FHIR R4 resource builders
+│   ├── graph/
+│   │   └── state.py        # LangGraph StateGraph definition
+│   ├── mcp/
+│   │   └── whatsapp.py     # WhatsApp MCP integration
+│   └── config.py           # Environment config (dataclasses)
+├── tests/
+│   └── docsync_testing.ipynb  # Jupyter testing notebook
+├── src/ui/3d-experience/   # React Three Fiber 3D dashboard
+│   ├── components/          # R3F 3D components
+│   ├── app/                 # Next.js pages
+│   └── ...
+├── requirements.txt
+└── .env.example
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+ (for 3D dashboard)
+- PostgreSQL database
+- MiniMax API key
+- ABDM UHI sandbox credentials (optional)
+
+### Installation
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd DocSync
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Setup environment variables
+cp .env.example .env
+# Edit .env with your API keys
+```
+
+### Environment Variables
+
+```bash
+# .env
+MINIMAX_API_KEY=your_minimax_api_key
+OPENAI_API_BASE=https://api.minimax.io/v1
+
+UHI_CLIENT_ID=your_uhi_client_id
+UHI_CLIENT_SECRET=your_uhi_client_secret
+UHI_GATEWAY_URL=https://sandbox.abdm.gov.in/uhi/gateway
+CALLBACK_URL=https://your-domain.com/uhi/callback
+
+DATABASE_URL=postgresql://user:password@localhost:5432/ayusync
+
+LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
+LANGFUSE_SECRET_KEY=your_langfuse_secret_key
+LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+### Running the API
+
+```bash
+# Start FastAPI server
+uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
+
+# API documentation at http://localhost:8000/docs
+```
+
+### Running the 3D Dashboard
+
+```bash
+# Navigate to 3D UI
+cd src/ui/3d-experience
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Open http://localhost:3000
+```
+
+### Testing in Jupyter
+
+```bash
+# Install Jupyter
+pip install jupyter ipykernel
+
+# Add environment as Jupyter kernel
+python -m ipykernel install --user --name=docsync --display-name="DocSync"
+
+# Start Jupyter
+jupyter notebook tests/docsync_testing.ipynb
+
+# Or with JupyterLab
+jupyter lab tests/docsync_testing.ipynb
+```
+
+### Quick Test (No Jupyter)
+
+```bash
+python -c "
+from src.graph.state import PatientState
+from src.agents.steward import steward_node
+from src.agents.symptom import symptom_node
+
+# Test emergency detection
+state = PatientState(raw_message='I have chest pain', phone_number='+919876543210')
+result = steward_node(state)
+print(f'Emergency detected: {result.has_red_flags}')
+
+# Test symptom extraction  
+state2 = PatientState(raw_message='I have headache for 3 days', phone_number='+919876543210')
+result2 = symptom_node(state2)
+print(f'Symptoms: {result2.symptoms}')
+"
+```
+
+## Testing
+
+### Run All Tests
+
+```bash
+pytest tests/ -v
+```
+
+### Test Coverage
+
+| Node | Coverage |
+|------|----------|
+| steward_node | Red flag patterns for 5 emergency types |
+| symptom_node | 8 symptom categories with NLP extraction |
+| history_node | Patient lookup and mock data |
+| fhir_node | FHIR R4 DiagnosticReport generation |
+| uhi_discovery | Mock doctor search |
+| uhi_confirm | Booking confirmation flow |
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Service info |
+| GET | `/health` | Health check |
+| POST | `/whatsapp/webhook` | WhatsApp message webhook |
+| POST | `/uhi/on_search` | UHI search callback |
+| POST | `/uhi/on_confirm` | UHI booking callback |
+
+## FHIR Report Format
+
+```json
+{
+  "id": "report-{session_id}",
+  "status": "final",
+  "code": {
+    "coding": [{
+      "system": "http://loinc.org",
+      "code": "72198-7",
+      "display": "Consultation note"
+    }]
+  },
+  "subject": {
+    "reference": "Patient/{phone_number}"
+  },
+  "contained": [...]
+}
+```
+
+## Red Flag Detection
+
+The steward node detects these emergency patterns:
+
+| Category | Keywords |
+|----------|----------|
+| Chest Pain | chest pain, chest pressure, arm pain, jaw pain |
+| Stroke | face drooping, slurred speech, numbness one side |
+| Breathing | difficulty breathing, shortness of breath, choking |
+| Bleeding | severe bleeding, blood in stool/vomit |
+| Consciousness | unconscious, fainted, seizure |
+
+## Development
+
+### Code Style
+
+- Follow PEP 8
+- Use type hints
+- Add docstrings to all public functions
+
+### Commit Messages
+
+```
+feat: add new symptom extraction patterns
+fix: resolve emergency routing edge case  
+docs: update API documentation
+test: add FHIR generation tests
+refactor: simplify history node queries
+```
+
+## License
+
+MIT License - see LICENSE file
+
 ---
 
-## 📦 Project Structure
-- `/src/agents/`: Core LangGraph node definitions.
-- `/src/mcp/`: WhatsApp integration and MCP servers.
-- `/src/schemas/`: FHIR-compliant data models.
-- `/src/ui/`: Doctor-facing dashboard (Next.js).
-- `/tests/`: Automated testing and agent trace logs.
-
----
-
-## 🏁 Getting Started
-(Detailed installation instructions to follow during development)
-
----
-
-## ⚖️ Disclaimer
-*DocSync is an AI-powered coordination tool. For actual medical advice, diagnosis, or treatment, always consult a qualified healthcare professional.*
-
----
-
-**Developed for AI Ignite Hackathon @ HKBK College of Engineering**
+*Built for the AI Ignite Hackathon - HKBK College*
