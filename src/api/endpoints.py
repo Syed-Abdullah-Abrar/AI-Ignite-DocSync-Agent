@@ -39,14 +39,7 @@ class DashboardStatsResponse(BaseModel):
     available_doctors: int
 
 
-# Mock data for development - in production, this comes from PostgreSQL
-MOCK_PATIENTS = [
-    {"id": "1", "name": "Patient A", "status": "symptoms_detected", "severity": "moderate"},
-    {"id": "2", "name": "Patient B", "status": "reasoning", "severity": "mild"},
-    {"id": "3", "name": "Patient C", "status": "booking", "severity": "mild"},
-    {"id": "4", "name": "Patient D", "status": "symptoms_detected", "severity": "severe"},
-]
-
+# Mock doctors (UHI doctors are not yet in the DB)
 MOCK_DOCTORS = [
     {"id": "d1", "name": "Dr. Sharma", "specialty": "General Physician", "available": True, "hospital": "Manipal Hospital", "distance": "2.3 km"},
     {"id": "d2", "name": "Dr. Kumar", "specialty": "Internal Medicine", "available": True, "hospital": "Apollo Hospitals", "distance": "4.1 km"},
@@ -54,23 +47,62 @@ MOCK_DOCTORS = [
 ]
 
 
+async def _get_db_session():
+    """Get async database session."""
+    from src.db.connection import get_session_factory
+    factory = get_session_factory()
+    async with factory() as session:
+        yield session
+
+
+def _patient_to_response(patient) -> dict:
+    """Convert Patient model to API response format."""
+    # Map patient record to dashboard format
+    # Use phone_number as unique identifier, derive status from history
+    return {
+        "id": patient.id,
+        "name": patient.name or f"Patient {patient.id[-4:]}",
+        "status": "symptoms_detected",  # Default - could be derived from sessions
+        "severity": "mild",  # Default - could be derived from sessions
+        "phone_number": patient.phone_number,
+    }
+
+
 @router.get("/patients", response_model=list[PatientResponse])
 async def get_patients():
     """
     Get all patients for the 3D dashboard.
     
-    In production, this queries the database for active patient sessions.
+    Queries the database for all patients.
     """
-    return MOCK_PATIENTS
+    from sqlalchemy import select
+    from src.db.connection import get_engine
+    from src.db.models import Patient
+    
+    engine = get_engine()
+    async with engine.begin() as conn:
+        result = await conn.execute(select(Patient))
+        patients = result.scalars().all()
+    
+    return [_patient_to_response(p) for p in patients]
 
 
 @router.get("/patients/{patient_id}", response_model=PatientResponse)
 async def get_patient(patient_id: str):
     """Get a specific patient by ID."""
-    for patient in MOCK_PATIENTS:
-        if patient["id"] == patient_id:
-            return patient
-    raise HTTPException(status_code=404, detail="Patient not found")
+    from sqlalchemy import select
+    from src.db.connection import get_engine
+    from src.db.models import Patient
+    
+    engine = get_engine()
+    async with engine.begin() as conn:
+        result = await conn.execute(select(Patient).where(Patient.id == patient_id))
+        patient = result.scalar_one_or_none()
+    
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    return _patient_to_response(patient)
 
 
 @router.get("/doctors", response_model=list[DoctorResponse])
@@ -97,17 +129,35 @@ async def get_stats():
     """
     Get dashboard statistics.
     
-    Returns counts for active patients, in-reasoning, bookings, and available doctors.
+    Returns counts for active patients, sessions, and available doctors.
     """
-    active = len([p for p in MOCK_PATIENTS if p["status"] in ["symptoms_detected", "reasoning", "booking"]])
-    reasoning = len([p for p in MOCK_PATIENTS if p["status"] == "reasoning"])
-    booking = len([p for p in MOCK_PATIENTS if p["status"] == "booking"])
-    available = len([d for d in MOCK_DOCTORS if d["available"]])
+    from sqlalchemy import select, func
+    from src.db.connection import get_engine
+    from src.db.models import Patient, Session, Appointment
+    
+    engine = get_engine()
+    async with engine.begin() as conn:
+        # Count patients
+        patients_count = await conn.execute(select(func.count(Patient.id)))
+        active_patients = patients_count.scalar() or 0
+        
+        # Count sessions (rough proxy for active reasoning)
+        sessions_count = await conn.execute(select(func.count(Session.id)))
+        in_reasoning = min(sessions_count.scalar() or 0, active_patients)
+        
+        # Count confirmed appointments
+        appointments_count = await conn.execute(
+            select(func.count(Appointment.id)).where(Appointment.status == "confirmed")
+        )
+        booking_confirmed = appointments_count.scalar() or 0
+        
+        # Count available doctors (from mock)
+        available = len([d for d in MOCK_DOCTORS if d["available"]])
     
     return DashboardStatsResponse(
-        active_patients=active,
-        in_reasoning=reasoning,
-        booking_confirmed=booking,
+        active_patients=active_patients,
+        in_reasoning=in_reasoning,
+        booking_confirmed=booking_confirmed,
         available_doctors=available
     )
 
@@ -132,12 +182,18 @@ async def create_booking(request: BookingRequest):
     
     This triggers the UHI booking flow and returns confirmation.
     """
+    import uuid
+    import asyncio
+    from sqlalchemy import select
+    from src.db.connection import get_engine
+    from src.db.models import Patient, Appointment
+    
+    engine = get_engine()
+    
     # Validate patient exists
-    patient = None
-    for p in MOCK_PATIENTS:
-        if p["id"] == request.patient_id:
-            patient = p
-            break
+    async with engine.begin() as conn:
+        result = await conn.execute(select(Patient).where(Patient.id == request.patient_id))
+        patient = result.scalar_one_or_none()
     
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -158,10 +214,20 @@ async def create_booking(request: BookingRequest):
             message=f"Doctor {doctor['name']} is not available"
         )
     
-    # In production: call uhi_confirm_node via the graph pipeline
-    # For now, return mock confirmation
-    import uuid
+    # Create appointment record in database
     appointment_id = f"APT-{uuid.uuid4().hex[:8].upper()}"
+    
+    async with engine.begin() as conn:
+        appointment = Appointment(
+            id=appointment_id,
+            patient_id=request.patient_id,
+            doctor_id=request.doctor_id,
+            doctor_name=doctor["name"],
+            hospital=doctor.get("hospital", ""),
+            status="confirmed",
+            confirmed_at=datetime.utcnow(),
+        )
+        conn.add(appointment)
     
     return BookingResponse(
         success=True,

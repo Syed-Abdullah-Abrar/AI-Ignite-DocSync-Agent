@@ -33,8 +33,16 @@ _executor = ThreadPoolExecutor(max_workers=4)
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     logger.info("DocSync API starting up...")
+    
+    # Initialize database tables
+    from src.db.connection import init_db, seed_patients_if_empty, close_db
+    await init_db()
+    await seed_patients_if_empty()
+    logger.info("Database initialized and seeded")
+    
     yield
     logger.info("DocSync API shutting down...")
+    await close_db()
     _executor.shutdown(wait=True)
 
 

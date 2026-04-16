@@ -1,15 +1,47 @@
 """
 History Node - Patient Medical History
 
-Retrieves longitudinal patient records from PostgreSQL.
+Retrieves longitudinal patient records from data/patients.json.
 """
-from typing import Optional
+import json
+import os
 from src.graph.state import PatientState
+
+
+def _load_patients() -> list[dict]:
+    """Load patients from data/patients.json."""
+    # Lazy import to avoid circular issues
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    patients_path = os.path.join(project_root, "data", "patients.json")
+    
+    with open(patients_path, "r") as f:
+        data = json.load(f)
+    
+    return data.get("patients", [])
+
+
+def _find_patient(phone_number: str, patient_id: str | None) -> dict | None:
+    """Find patient by phone_number or patient_id."""
+    patients = _load_patients()
+    
+    # Try phone_number first (primary lookup)
+    if phone_number:
+        for patient in patients:
+            if patient.get("phone_number") == phone_number:
+                return patient
+    
+    # Fallback to patient_id
+    if patient_id:
+        for patient in patients:
+            if patient.get("id") == patient_id:
+                return patient
+    
+    return None
 
 
 def history_node(state: PatientState) -> PatientState:
     """
-    Retrieve patient history from database.
+    Retrieve patient history from data/patients.json.
     
     Args:
         state: Current patient state with patient_id or phone_number
@@ -17,26 +49,24 @@ def history_node(state: PatientState) -> PatientState:
     Returns:
         Updated state with medical_history, allergies, current_medications
     """
-    if not state.patient_id and not state.phone_number:
-        # New patient - initialize empty history
+    patient = _find_patient(
+        phone_number=state.phone_number,
+        patient_id=state.patient_id
+    )
+    
+    if patient:
+        # Found patient — load their real data
+        state.medical_history = patient.get("medical_history", [])
+        state.allergies = patient.get("allergies", [])
+        state.current_medications = patient.get("current_medications", [])
+        # Store patient_id if not set (enables future DB lookups)
+        if not state.patient_id:
+            state.patient_id = patient.get("id")
+    else:
+        # New/unknown patient — initialize empty history
         state.medical_history = []
         state.allergies = []
         state.current_medications = []
-        return state
-    
-    # In production, query PostgreSQL:
-    # patient = db.patients.find_one(phone=state.phone_number)
-    # state.medical_history = patient.get("conditions", [])
-    # state.allergies = patient.get("allergies", [])
-    # state.current_medications = patient.get("medications", [])
-    
-    # Mock data for development
-    state.medical_history = [
-        {"condition": "Type 2 Diabetes", "diagnosed": "2022-03-15", "status": "managed"},
-        {"condition": "Hypertension", "diagnosed": "2021-08-01", "status": "managed"}
-    ]
-    state.allergies = ["Penicillin"]
-    state.current_medications = ["Metformin 500mg", "Lisinopril 10mg"]
     
     return state
 
@@ -44,6 +74,9 @@ def history_node(state: PatientState) -> PatientState:
 def update_patient_history(state: PatientState, new_condition: dict) -> PatientState:
     """
     Update patient history with new clinical data.
+    
+    Note: This only updates the in-memory state. In production,
+    persist to PostgreSQL via the db layer.
     
     Args:
         state: Current patient state
