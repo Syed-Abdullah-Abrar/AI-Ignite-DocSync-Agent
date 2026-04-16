@@ -34,19 +34,27 @@ def get_llm():
     return _llm
 
 
-SYSTEM_PROMPT = """You are a clinical reasoning assistant. Given patient symptoms, 
-medical history, and clinical findings, identify potential diagnoses and determine 
-if additional information is needed.
+SYSTEM_PROMPT = """You are a clinical reasoning assistant for a healthcare triage system.
 
-Confidence threshold: 0.8 (80%)
+Given patient symptoms, medical history, allergies, and medications, provide a concise differential diagnosis.
 
-Output format - respond with JSON:
+RULES:
+- Each finding must be a SHORT, one-line plain-English description (no JSON, no nested objects)
+- Maximum 4 findings
+- Include a confidence score between 0 and 1
+- List any critical questions that would help narrow the diagnosis
+
+You MUST respond ONLY with this exact JSON structure (no other text):
 {
-  "findings": [{"description": "...", "code": "..."}],
+  "findings": [
+    {"description": "Most likely: Tension headache due to stress", "code": "R51"},
+    {"description": "Consider: Hypertensive episode — check BP given medication history", "code": "I10"}
+  ],
   "confidence": 0.75,
-  "gaps": ["question to ask patient?"]
+  "gaps": ["How long has the headache lasted?"]
 }
-"""
+
+CRITICAL: The "description" field must be a single short sentence. Never put JSON objects, arrays, or nested structures inside the description. Keep it readable by a non-medical person."""
 
 
 def reasoning_node(state: PatientState) -> PatientState:
@@ -109,7 +117,7 @@ Medical History:
 Allergies: {', '.join(state.allergies) if state.allergies else 'None known'}
 Current Medications: {', '.join(state.current_medications) if state.current_medications else 'None'}
 
-Provide clinical reasoning in JSON format."""
+Provide your differential diagnosis. Remember: each finding description must be a single short sentence, NOT a JSON object."""
     return prompt
 
 

@@ -223,18 +223,55 @@ async def chat_message(request: Request):
     elif booking_confirmed:
         response["message"] = f"✅ Appointment booked! Your appointment ID is: {appointment_id}"
     elif symptoms and doctor_options:
-        symptom_text = ', '.join(symptoms)
-        severity_text = f" (severity: {severity})" if severity else ""
+        symptom_text = ', '.join(symptoms).title()
+        severity_text = f" (Severity: {severity})" if severity else ""
+        
+        # Format Clinical Findings — extract human-readable text from JSON dicts
+        findings_text = "Pending doctor evaluation"
+        if clinical_findings:
+            if isinstance(clinical_findings, list):
+                descriptions = []
+                for i, f in enumerate(clinical_findings):
+                    if isinstance(f, dict):
+                        desc = f.get("description", "")
+                        # Safety net: if desc is itself a dict/JSON, flatten it
+                        if isinstance(desc, dict):
+                            desc = desc.get("assessment", desc.get("text", str(desc)))
+                        # If desc contains '{' it's likely JSON that leaked through
+                        if '{' in str(desc):
+                            desc = "Clinical finding (see FHIR report for details)"
+                        if not desc:
+                            desc = str(f)
+                    else:
+                        desc = str(f)
+                        if '{' in desc and len(desc) > 200:
+                            desc = "Clinical finding (see FHIR report for details)"
+                    descriptions.append(f"{i+1}. {desc}")
+                findings_text = "\n".join(descriptions[:4])  # Max 4 findings
+            elif isinstance(clinical_findings, str):
+                if '{' in clinical_findings and len(clinical_findings) > 200:
+                    findings_text = "Clinical analysis complete (see FHIR report for details)"
+                else:
+                    findings_text = clinical_findings
+
         history_text = ""
         if medical_history:
             conditions = [h.get("condition", "") for h in medical_history if isinstance(h, dict)]
+            allergies = result.get("allergies", [])
+            meds = result.get("current_medications", [])
             if conditions:
-                history_text = f"\n\n📋 I found your medical records: {', '.join(conditions)}. This context has been considered in the analysis."
+                history_text = f"\n\n**MEDICAL HISTORY**\n" + ", ".join(conditions)
+            if allergies:
+                history_text += f"\n**ALLERGIES:** ⚠️ " + ", ".join(allergies)
+            if meds:
+                history_text += f"\n**MEDICATIONS:** " + ", ".join(meds)
+
         response["message"] = (
-            f"Based on your description, I've identified: **{symptom_text}**{severity_text}.\n\n"
-            f"I've analyzed your symptoms and found {len(doctor_options)} available doctor(s) near you."
+            f"Based on your description, I've structured your clinical profile for the doctor:\n\n"
+            f"**CHIEF COMPLAINTS**\n{symptom_text}{severity_text}\n\n"
+            f"**CLINICAL FINDINGS (Differential)**\n{findings_text}"
             f"{history_text}\n\n"
-            f"👇 See the doctor cards below to book an appointment."
+            f"I've found {len(doctor_options)} available doctor(s) near you. 👇 Click a card below to book."
         )
     elif symptoms:
         symptom_text = ', '.join(symptoms)
