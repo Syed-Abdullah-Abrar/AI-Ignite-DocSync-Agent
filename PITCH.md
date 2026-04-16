@@ -72,10 +72,28 @@ I have been having a persistent headache for the past 3 days, along with blurred
 > - *And finds 3 available doctors"*
 
 **When the response arrives, point out:**
-> - *"Look at the sidebar — 2 medical history records loaded automatically"*
-> - *"Symptoms correctly identified: headache, pain"*
-> - *"Doctor cards with specialties appear"*
-> - *"Click 'View FHIR Report' — this is a real FHIR R4 DiagnosticReport. Any hospital EMR in India can parse this."*
+> - *"Look at the sidebar — his medical history loaded automatically because he selected his profile."*
+> - *"The symptom cards appear, and notice it found doctors matching the differential diagnosis."*
+> - *"Now click 'View Doctor's Report'. What you see first is a beautiful, Human-Readable AI Summary linking his headache to his hypertension medication. But beneath it is the raw FHIR R4 JSON. This is what makes it interoperable."*
+
+### 🔄 THE HANDOFF: Patient → Doctor
+
+> *"When the patient clicks 'Book', we don't just send a text message. Using India's ABDM UHI network, we send the booking confirmation WITH this attached FHIR payload straight into the doctor's existing software. Let's see what the doctor sees."*
+
+**[Switch tabs to the Doctor View: http://localhost:8000/doctor]**
+
+> *"This is Dr. Sharma's EMR Dashboard. Notice the glowing UHI Network Active badge. A new appointment just arrived for Ravi Shankar."*
+
+**[Click on Ravi Shankar in the left queue]**
+
+> *"Dr. Sharma doesn't get a blank slate. He gets the complete AI clinical handoff. He sees:*
+> - *The AI's differential diagnosis.*
+> - *Ravi's underlying diabetes and hypertension.*
+> - *And a critical red alert: Penicillin Allergy.*
+>
+> *Before the patient even walks in the door, the doctor has a highly structured, accurate, and safe medical context. The doctor clicks 'Accept Appointment', and the handshake is complete."*
+
+**[Click 'Accept Appointment', show the success modal, then switch back to the Patient chat tab]**
 
 ---
 

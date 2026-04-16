@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Sharma | UHI EMR Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-sidebar: #1e293b;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --text-sidebar: #f1f5f9;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.15);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --transition: 0.2s ease-in-out;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--bg-sidebar); color: var(--text-sidebar); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .clinic-name { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+        .doctor-name { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+        .nav-items { flex: 1; padding: 20px 0; }
+        .nav-item { padding: 12px 24px; display: flex; align-items: center; gap: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: var(--transition); }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.05); color: white; border-left: 3px solid var(--accent); }
+
+        /* Main Content */
+        .main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .topbar { background: var(--bg-surface); padding: 16px 32px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .topbar-title { font-weight: 600; font-size: 20px; }
+        .topbar-actions { display: flex; gap: 16px; align-items: center; }
+        .badge-uhi { background: rgba(16,185,129,0.1); color: var(--success); font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(16,185,129,0.3); }
+
+        .dashboard-content { padding: 32px; overflow-y: auto; display: flex; gap: 32px; height: 100%; }
+
+        /* Appointments List */
+        .queue-col { width: 350px; display: flex; flex-direction: column; gap: 16px; }
+        .queue-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: var(--transition); position: relative; }
+        .queue-card.active { border-color: var(--accent); box-shadow: 0 4px 20px var(--accent-glow); }
+        .queue-card .time { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+        .queue-card .patient { font-weight: 600; font-size: 15px; }
+        .queue-card .complaint { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .new-badge { position: absolute; top: 16px; right: 16px; background: var(--warning); color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } }
+
+        /* Detail Panel */
+        .detail-col { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        
+        .patient-header { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .patient-info h2 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .patient-tags { display: flex; gap: 8px; margin-top: 12px; }
+        .patient-tag { background: #f1f5f9; color: var(--text-secondary); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; }
+        .patient-tag.alert { background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+
+        .btn-group { display: flex; gap: 12px; }
+        .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; border: none; transition: var(--transition); }
+        .btn-accept { background: var(--accent); color: white; }
+        .btn-accept:hover { background: #1d4ed8; transform: translateY(-1px); }
+        .btn-decline { background: white; color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-decline:hover { background: #f1f5f9; color: var(--danger); border-color: rgba(239,68,68,0.3); }
+
+        /* FHIR View */
+        .fhir-panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; flex: 1; }
+        .fhir-header { padding: 16px 24px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .fhir-content { padding: 24px; flex: 1; overflow-y: auto; }
+        
+        .section-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; margin-top: 24px; }
+        .section-title:first-child { margin-top: 0; }
+        
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .data-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+        .data-card h4 { font-size: 14px; margin-bottom: 8px; color: var(--text-primary); }
+        .data-card ul { list-style: none; }
+        .data-card li { font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; display: flex; align-items: flex-start; gap: 8px; }
+        .data-card li::before { content: '•'; color: var(--accent); font-weight: bold; }
+
+        .ai-summary { background: rgba(37,99,235,0.05); border: 1px solid rgba(37,99,235,0.2); border-left: 4px solid var(--accent); border-radius: 8px; padding: 16px; font-size: 14px; line-height: 1.6; color: var(--text-primary); }
+        
+        .raw-fhir { margin-top: 24px; background: #0f172a; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 12px; color: #a5b4fc; overflow-x: auto; display: none; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: var(--transition); }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .modal { background: white; border-radius: var(--radius); padding: 32px; width: 400px; text-align: center; transform: translateY(20px); transition: var(--transition); }
+        .modal-overlay.show .modal { transform: translateY(0); }
+        .modal-icon { font-size: 48px; margin-bottom: 16px; }
+        .modal h3 { font-size: 20px; margin-bottom: 8px; }
+        .modal p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="clinic-name">🏥 CityCare Clinic</div>
+            <div class="doctor-name">Dr. Sharma • General Physician</div>
+        </div>
+        <div class="nav-items">
+            <div class="nav-item active">📅 Incoming UHI Bookings</div>
+            <div class="nav-item">👥 My Patients</div>
+            <div class="nav-item">📈 Analytics</div>
+            <div class="nav-item">⚙️ Settings</div>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+        <header class="topbar">
+            <div class="topbar-title">Incoming Appointments</div>
+            <div class="topbar-actions">
+                <span class="badge-uhi">⚡ ABDM UHI Network Active</span>
+                <div style="width:36px;height:36px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;">👨‍⚕️</div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Queue Column -->
+            <div class="queue-col">
+                <div class="queue-card active" onclick="selectPatient(this)">
+                    <div class="new-badge">NEW VIA DOCSYNC</div>
+                    <div class="time">Today, 2:30 PM</div>
+                    <div class="patient">Ravi Shankar</div>
+                    <div class="complaint">Headache (3 days), Blurred vision</div>
+                </div>
+                <div class="queue-card" style="opacity:0.6">
+                    <div class="time">Today, 3:00 PM</div>
+                    <div class="patient">Anil Kumar</div>
+                    <div class="complaint">Routine Checkup</div>
+                </div>
+                <div class="queue-card" style="opacity:0.6">
+                    <div class="time">Today, 4:15 PM</div>
+                    <div class="patient">Sneha Reddy</div>
+                    <div class="complaint">Fever, Cough</div>
+                </div>
+            </div>
+
+            <!-- Detail Column -->
+            <div class="detail-col">
+                <!-- Patient Header -->
+                <div class="patient-header">
+                    <div class="patient-info">
+                        <h2>Ravi Shankar</h2>
+                        <div style="color:var(--text-secondary); font-size:14px;">52 yrs • Male • ABHA: 91-8888-2222-1111</div>
+                        <div class="patient-tags">
+                            <span class="patient-tag">Chronic Patient</span>
+                            <span class="patient-tag alert">⚠ Penicillin Allergy</span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-decline" onclick="alert('Appointment Declined. Patient will be notified via UHI.')">Decline</button>
+                        <button class="btn btn-accept" onclick="acceptAppointment()">Accept Appointment</button>
+                    </div>
+                </div>
+
+                <!-- FHIR Report View -->
+                <div class="fhir-panel">
+                    <div class="fhir-header">
+                        <div>📋 AI Clinical Handoff (FHIR DiagnosticReport)</div>
+                        <button style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;" onclick="toggleRaw()"></> View Raw JSON</button>
+                    </div>
+                    <div class="fhir-content">
+                        
+                        <div class="section-title">AI Differential Diagnosis</div>
+                        <div class="ai-summary">
+                            <strong>Assessment:</strong> Patient presents with mild headache and blurred vision for 3 days.<br><br>
+                            <strong>Differential Considerations:</strong><br>
+                            1. Tension Headache<br>
+                            2. Hypertension-Related Symptoms (Note: Patient has history of hypertension, currently on Lisinopril)<br>
+                            3. Migraine<br><br>
+                            <strong>Note:</strong> Over-the-counter NSAIDs/Acetaminophen recommended. Avoid Penicillin due to known allergy.
+                        </div>
+
+                        <div class="data-grid" style="margin-top:24px;">
+                            <div class="data-card">
+                                <h4>Medical History (Conditions)</h4>
+                                <ul>
+                                    <li>Type 2 Diabetes — Managed (since 2019)</li>
+                                    <li>Hypertension — Managed (since 2020)</li>
+                                </ul>
+                            </div>
+                            <div class="data-card">
+                                <h4>Current Medications</h4>
+                                <ul>
+                                    <li>Metformin 500mg</li>
+                                    <li>Lisinopril 10mg</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="rawJson" class="raw-fhir">
+{
+  "resourceType": "DiagnosticReport",
+  "status": "final",
+  "code": {
+    "coding": [{"system": "http://loinc.org", "code": "72198-7"}]
+  },
+  "subject": {"reference": "Patient/P001"},
+  "contained": [
+    {
+      "resourceType": "Condition",
+      "code": {"text": "Type 2 Diabetes"}
+    },
+    {
+      "resourceType": "AllergyIntolerance",
+      "code": {"text": "Penicillin"}
+    }
+  ]
+}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal">
+            <div class="modal-icon">✅</div>
+            <h3>Appointment Confirmed!</h3>
+            <p>The UHI confirmation handshake is complete. The patient has been notified and the slot is locked.</p>
+            <button class="btn btn-accept" style="width:100%" onclick="closeModal()">Return to Dashboard</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleRaw() {
+            const raw = document.getElementById('rawJson');
+            raw.style.display = raw.style.display === 'none' || raw.style.display === '' ? 'block' : 'none';
+        }
+
+        function acceptAppointment() {
+            document.getElementById('successModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('successModal').classList.remove('show');
+            document.querySelector('.new-badge').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

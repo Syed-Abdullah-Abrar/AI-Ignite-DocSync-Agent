@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Path to chat UI directory
 CHAT_UI_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ui", "chat")
+DOCTOR_UI_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ui", "doctor")
 
 
 # Thread pool for running sync graph in async context
@@ -258,6 +259,12 @@ async def root():
 async def chat_page():
     """Serve the chat UI."""
     return FileResponse(os.path.join(CHAT_UI_DIR, "index.html"))
+
+
+@app.get("/doctor")
+async def doctor_page():
+    """Serve the doctor EMR UI."""
+    return FileResponse(os.path.join(DOCTOR_UI_DIR, "index.html"))
 
 
 # Mount static assets for the chat UI (CSS, JS, images)
