@@ -10,6 +10,7 @@ In the bustling healthcare landscape of Bangalore, the gap between a patient's i
 2. **Empowering Doctors:** Delivering structured, FHIR-compliant clinical reports before the patient even walks in.
 3. **Synchronizing Care:** Automating doctor discovery and booking via India's **ABDM Unified Health Interface (UHI)** protocols.
 
+
 ---
 
 ## 🚀 Key Features

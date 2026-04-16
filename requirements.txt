@@ -1,4 +1,4 @@
-# AyuSync - Core Dependencies
+# DocSync - Core Dependencies
 
 # Orchestration & AI
 langgraph
